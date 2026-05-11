@@ -1,216 +1,262 @@
-require('dotenv').config()
-
-const express = require('express')
-const TelegramBot = require('node-telegram-bot-api')
-const cors = require('cors')
+const express = require("express")
+const TelegramBot = require("node-telegram-bot-api")
 
 const app = express()
 
-app.use(cors())
+const TOKEN = process.env.BOT_TOKEN
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  polling: true
-})
+const ADMIN_ID = "8706308967"
+
+const bot = new TelegramBot(TOKEN, { polling: true })
 
 let users = []
-let messages = []
+let logs = []
+let orders = []
 
-bot.on('message', (msg) => {
+function addUser(user) {
 
-  const id = msg.from.id
-  const username = msg.from.username || 'unknown'
+if (!users.find(u => u.id === user.id)) {
 
-  if (!users.find(u => u.id === id)) {
-
-    users.push({
-      id,
-      username,
-      time: new Date().toLocaleTimeString()
-    })
-
-  }
-
-  messages.unshift({
-    username,
-    text: msg.text || 'media',
-    time: new Date().toLocaleTimeString()
-  })
-
-  messages = messages.slice(0, 15)
-
+users.push({
+id: user.id,
+username: user.username || "no_username",
+status: "ONLINE",
+plan: "FREE"
 })
+
+}
+
+}
+
+function addLog(username, text) {
+
+logs.unshift({
+username: username || "no_username",
+text: text,
+time: new Date().toLocaleTimeString()
+})
+
+if (logs.length > 20) {
+logs.pop()
+}
+
+}
 
 bot.onText(/\/start/, (msg) => {
 
+addUser(msg.from)
+
+addLog(msg.from.username, "зашел в бота")
+
 bot.sendMessage(msg.chat.id,
 
-`🌌 VPN NOOL
+`👋 Добро пожаловать в VPN NOOL PREMIUM
 
-🚀 Добро пожаловать в VPN NOOL
+🚀 Быстрый и стабильный VPN
 
-🛡 Премиум VPN сервис
-⚡ Высокая скорость подключения
-🌍 Доступ ко всему интернету
-🔒 Полная безопасность и анонимность
+📱 Инструкция:
 
-📖 Инструкция по подключению:
+1️⃣ Скачайте Happ
+2️⃣ Получите VPN ключ
+3️⃣ Откройте Happ
+4️⃣ Нажмите "Выбрать из буфера"
+5️⃣ Подключитесь к серверу
 
-1️⃣ Скачайте приложение Happ
-📱 Доступно на Android и iPhone
-
-2️⃣ После покупки получите VPN ключ
-
-3️⃣ Откройте приложение Happ
-
-4️⃣ Внизу слева нажмите:
-📋 "Выбрать из буфера"
-
-5️⃣ Вставьте ключ и выберите сервер
-
-🚀 Самые быстрые сервера:
-🇩🇪 Германия
-🇳🇱 Нидерланды
-
-💜 Приятного пользования VPN NOOL`,
-
+⚡ Лучшие сервера:
+🇩🇪 Germany
+🇳🇱 Netherlands`,
 {
-reply_markup:{
-keyboard:[
-
-['🛒 Купить подписку'],
-
-['🛠 Поддержка']
-
+reply_markup: {
+keyboard: [
+["💳 Купить VPN"],
+["🛠 Поддержка"]
 ],
-resize_keyboard:true
+resize_keyboard: true
 }
-}
-
-)
+})
 
 })
 
-bot.on('message', (msg) => {
+bot.on("message", (msg) => {
 
-if(msg.text === '🛒 Купить подписку'){
+if (!msg.text) return
+
+addUser(msg.from)
+
+if (msg.text === "💳 Купить VPN") {
+
+addLog(msg.from.username, "открыл тарифы")
 
 bot.sendMessage(msg.chat.id,
 
-`💎 VPN NOOL PREMIUM
+`💎 Тарифы VPN NOOL PREMIUM
 
-📅 Подписка на 1 месяц
-💰 Стоимость: 300 RUB
-📱 Подключение только на 1 устройство
-
-👇 Выберите действие`,
-
+📅 1 Месяц — 399₽
+📅 3 Месяца — 899₽
+📅 12 Месяцев — 2999₽`,
 {
-reply_markup:{
-keyboard:[
-
-['💳 Купить 1 месяц'],
-
-['⬅ Назад']
-
+reply_markup: {
+keyboard: [
+["📅 1 Месяц"],
+["📅 3 Месяца"],
+["📅 12 Месяцев"],
+["⬅ Назад"]
 ],
-resize_keyboard:true
+resize_keyboard: true
 }
+})
+
 }
 
+if (
+msg.text === "📅 1 Месяц" ||
+msg.text === "📅 3 Месяца" ||
+msg.text === "📅 12 Месяцев"
+) {
+
+orders.unshift({
+id: msg.from.id,
+username: msg.from.username || "no_username",
+plan: msg.text
+})
+
+addLog(msg.from.username, "создал заявку")
+
+bot.sendMessage(msg.chat.id,
+
+`✅ Заявка создана
+
+👑 Для оплаты напишите:
+@SIKI_OFFICIAL
+
+🆔 Ваш ID:
+${msg.from.id}
+
+⚡ После оплаты вам выдадут VPN ключ`
+)
+
+bot.sendMessage(ADMIN_ID,
+
+`🚨 НОВАЯ ЗАЯВКА
+
+👤 @${msg.from.username}
+
+🆔 ID: ${msg.from.id}
+
+💎 Тариф:
+${msg.text}`
 )
 
 }
 
-if(msg.text === '💳 Купить 1 месяц'){
+if (msg.text === "🛠 Поддержка") {
+
+addLog(msg.from.username, "открыл поддержку")
 
 bot.sendMessage(msg.chat.id,
 
-`⚠ Бот временно недоступен
-
-🔑 Для покупки VPN ключа:
+`🛠 Поддержка VPN NOOL
 
 👑 Владелец:
-@SIKI_OFFICIAL
-
-📩 Напишите владельцу для получения доступа`
+@SIKI_OFFICIAL`
 )
 
 }
 
-if(msg.text === '🛠 Поддержка'){
-
-bot.sendMessage(msg.chat.id,
-
-`🛠 Техническая поддержка
-
-👤 Администратор:
-@SIKI_OFFICIAL
-
-📩 По всем вопросам пишите владельцу`
-)
-
-}
-
-if(msg.text === '⬅ Назад'){
+if (msg.text === "⬅ Назад") {
 
 bot.sendMessage(msg.chat.id,
 
 `🏠 Главное меню`,
-
 {
-reply_markup:{
-keyboard:[
-
-['🛒 Купить подписку'],
-
-['🛠 Поддержка']
-
+reply_markup: {
+keyboard: [
+["💳 Купить VPN"],
+["🛠 Поддержка"]
 ],
-resize_keyboard:true
+resize_keyboard: true
 }
-}
-
-)
+})
 
 }
 
 })
 
-app.get('/', (req, res) => {
+app.get("/", (req,res) => {
 
 res.send(`
-<html>
+
+<!DOCTYPE html>
+<html lang="ru">
 
 <head>
 
-<title>VPN NOOL ADMIN</title>
-
 <meta charset="UTF-8">
 
-<meta http-equiv="refresh" content="3">
+<meta http-equiv="refresh" content="2">
+
+<title>VPN NOOL PREMIUM</title>
 
 <style>
 
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:sans-serif;
+}
+
 body{
 background:#050510;
-font-family:sans-serif;
 color:white;
-margin:0;
+overflow-x:hidden;
+}
+
+.sidebar{
+position:fixed;
+left:0;
+top:0;
+width:260px;
+height:100vh;
+background:#0d0d18;
+border-right:1px solid #6d28d9;
+padding:25px;
+}
+
+.logo{
+font-size:32px;
+font-weight:900;
+color:#00ffe1;
+text-shadow:0 0 20px #00ffe1;
+margin-bottom:40px;
+}
+
+.menu button{
+width:100%;
+margin-bottom:15px;
+padding:15px;
+border:none;
+border-radius:15px;
+background:#151526;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+.main{
+margin-left:260px;
 padding:30px;
 }
 
-.title{
-font-size:50px;
-font-weight:900;
-color:#a855f7;
-margin-bottom:10px;
-text-shadow:0 0 20px #a855f7;
+.topbar{
+display:flex;
+justify-content:space-between;
+margin-bottom:30px;
 }
 
-.online{
+.status{
 color:#00ff88;
 font-weight:bold;
-margin-bottom:30px;
 }
 
 .grid{
@@ -221,33 +267,61 @@ gap:20px;
 
 .card{
 background:#111122;
-border:1px solid #7e22ce;
-border-radius:25px;
 padding:25px;
-box-shadow:0 0 25px rgba(168,85,247,.3);
+border-radius:25px;
+border:1px solid #00ffe1;
 }
 
 .big{
-font-size:40px;
+font-size:42px;
 font-weight:900;
+color:#00ffe1;
 margin-top:10px;
 }
 
 .logs{
-margin-top:40px;
+margin-top:30px;
 background:#111122;
-padding:20px;
+padding:25px;
 border-radius:25px;
-border:1px solid #7e22ce;
+border:1px solid #00ffe1;
 }
 
 .log{
-padding:10px;
+padding:12px;
 border-bottom:1px solid #222;
 }
 
-.username{
-color:#c084fc;
+.user{
+color:#00ffe1;
+font-weight:bold;
+}
+
+.table{
+margin-top:30px;
+background:#111122;
+padding:25px;
+border-radius:25px;
+border:1px solid #00ffe1;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:15px;
+text-align:left;
+border-bottom:1px solid #222;
+}
+
+th{
+color:#00ffe1;
+}
+
+.online{
+color:#00ff88;
 font-weight:bold;
 }
 
@@ -257,74 +331,110 @@ font-weight:bold;
 
 <body>
 
-<div class="title">
-VPN NOOL ADMIN
+<div class="sidebar">
+
+<div class="logo">
+VPN NOOL
 </div>
 
-<div class="online">
+<div class="menu">
+
+<button>📊 Dashboard</button>
+<button>👥 Пользователи</button>
+<button>💳 Подписки</button>
+<button>📨 Заявки</button>
+<button>⚙ Настройки</button>
+
+</div>
+
+</div>
+
+<div class="main">
+
+<div class="topbar">
+
+<h1>ADMIN PANEL</h1>
+
+<div class="status">
 ● SYSTEM ONLINE
+</div>
+
 </div>
 
 <div class="grid">
 
 <div class="card">
-<div>Пользователи</div>
-<div class="big">
-${users.length}
-</div>
+<h2>Пользователи</h2>
+<div class="big">${users.length}</div>
 </div>
 
 <div class="card">
-<div>Сообщения</div>
-<div class="big">
-${messages.length}
-</div>
+<h2>Заявки</h2>
+<div class="big">${orders.length}</div>
 </div>
 
 <div class="card">
-<div>Статус</div>
-<div class="big online">
-ONLINE
-</div>
+<h2>Онлайн</h2>
+<div class="big">${users.length}</div>
 </div>
 
 <div class="card">
-<div>VPN Nodes</div>
-<div class="big">
-12
-</div>
+<h2>Доход</h2>
+<div class="big">${orders.length * 399} ₽</div>
 </div>
 
 </div>
 
 <div class="logs">
 
-<h2>LIVE ACTIVITY</h2>
+<h1 style="margin-bottom:20px;">LIVE ACTIVITY</h1>
 
-${messages.map(m => `
+${logs.map(log => `
 <div class="log">
-
-<span class="username">
-@${m.username}
-</span>
-
-: ${m.text}
-
-<br>
-
-<small>${m.time}</small>
+<span class="user">@${log.username}</span>
+— ${log.text}
+</div>
+`).join("")}
 
 </div>
-`).join('')}
+
+<div class="table">
+
+<h1 style="margin-bottom:20px;">
+ПОСЛЕДНИЕ ПОЛЬЗОВАТЕЛИ
+</h1>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>USERNAME</th>
+<th>STATUS</th>
+<th>PLAN</th>
+</tr>
+
+${users.map(user => `
+<tr>
+<td>${user.id}</td>
+<td>@${user.username}</td>
+<td class="online">${user.status}</td>
+<td>${user.plan}</td>
+</tr>
+`).join("")}
+
+</table>
+
+</div>
 
 </div>
 
 </body>
 </html>
+
 `)
 
 })
 
 app.listen(3000, () => {
-console.log('VPN NOOL ADMIN STARTED')
+console.log("VPN NOOL PREMIUM STARTED")
 })
