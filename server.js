@@ -16,15 +16,18 @@ let users = []
 let messages = []
 
 bot.on('message', (msg) => {
+
   const id = msg.from.id
   const username = msg.from.username || 'unknown'
 
   if (!users.find(u => u.id === id)) {
+
     users.push({
       id,
       username,
       time: new Date().toLocaleTimeString()
     })
+
   }
 
   messages.unshift({
@@ -34,6 +37,68 @@ bot.on('message', (msg) => {
   })
 
   messages = messages.slice(0, 15)
+
+})
+
+bot.onText(/\/start/, (msg) => {
+
+bot.sendMessage(msg.chat.id,
+
+`🌌 VPN NOOL
+
+🚀 Добро пожаловать
+
+🛡 Премиум VPN сервис
+⚡ Быстрое подключение
+🌍 Доступ ко всему интернету
+
+Выберите действие ниже 👇`,
+
+{
+reply_markup:{
+keyboard:[
+
+['🛒 Купить'],
+
+['🛠 Поддержка']
+
+],
+resize_keyboard:true
+}
+}
+
+)
+
+})
+
+bot.on('message', (msg) => {
+
+if(msg.text === '🛒 Купить'){
+
+bot.sendMessage(msg.chat.id,
+
+`⚠ Бот временно недоступен
+
+🔑 Для покупки VPN ключа:
+
+👑 Владелец:
+@SIKI_OFFICIAL`
+)
+
+}
+
+if(msg.text === '🛠 Поддержка'){
+
+bot.sendMessage(msg.chat.id,
+
+`🛠 Техническая поддержка
+
+👤 Администратор:
+@SIKI_OFFICIAL`
+)
+
+}
+
 })
 
 app.get('/', (req, res) => {
@@ -42,9 +107,12 @@ res.send(`
 <html>
 
 <head>
+
 <title>VPN NOOL ADMIN</title>
 
 <meta charset="UTF-8">
+
+<meta http-equiv="refresh" content="3">
 
 <style>
 
@@ -64,11 +132,16 @@ margin-bottom:10px;
 text-shadow:0 0 20px #a855f7;
 }
 
+.online{
+color:#00ff88;
+font-weight:bold;
+margin-bottom:30px;
+}
+
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
 gap:20px;
-margin-top:30px;
 }
 
 .card{
@@ -83,11 +156,6 @@ box-shadow:0 0 25px rgba(168,85,247,.3);
 font-size:40px;
 font-weight:900;
 margin-top:10px;
-}
-
-.online{
-color:#00ff88;
-font-weight:bold;
 }
 
 .logs{
@@ -110,8 +178,6 @@ font-weight:bold;
 
 </style>
 
-<meta http-equiv="refresh" content="3">
-
 </head>
 
 <body>
@@ -127,21 +193,21 @@ VPN NOOL ADMIN
 <div class="grid">
 
 <div class="card">
-<div>Total Users</div>
+<div>Пользователи</div>
 <div class="big">
 ${users.length}
 </div>
 </div>
 
 <div class="card">
-<div>Messages Today</div>
+<div>Сообщения</div>
 <div class="big">
 ${messages.length}
 </div>
 </div>
 
 <div class="card">
-<div>Bot Status</div>
+<div>Статус</div>
 <div class="big online">
 ONLINE
 </div>
@@ -162,10 +228,17 @@ ONLINE
 
 ${messages.map(m => `
 <div class="log">
-<span class="username">@${m.username}</span>
+
+<span class="username">
+@${m.username}
+</span>
+
 : ${m.text}
+
 <br>
+
 <small>${m.time}</small>
+
 </div>
 `).join('')}
 
